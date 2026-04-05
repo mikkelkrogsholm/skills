@@ -50,6 +50,10 @@
     "rejseplanen": {
       "source": "skills/rejseplanen/SKILL.md",
       "sourceType": "local"
+    },
+    "oebb": {
+      "source": "skills/oebb/SKILL.md",
+      "sourceType": "local"
     }
   }
 }
