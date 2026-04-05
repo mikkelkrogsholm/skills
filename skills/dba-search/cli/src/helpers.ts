@@ -163,6 +163,64 @@ export function validateId(id: string, idType: "category" | "location"): string 
   return null
 }
 
+// ---------------------------------------------------------------------------
+// Name resolution — used by search to accept human-readable names in addition
+// to numeric IDs (e.g. "Bagenkop" → "1.200009.215935").
+// ---------------------------------------------------------------------------
+
+const FILTER_SEARCH_PATH = "/recommerce/forsale/search/api/search/SEARCH_ID_BAP_COMMON"
+
+interface FilterItem {
+  display_name: string
+  name: string
+  value: string
+  hits: number
+  filter_items: FilterItem[]
+}
+
+interface FiltersResponse {
+  filters: FilterItem[]
+}
+
+function findInFilterTree(items: FilterItem[], nameLower: string): string | null {
+  for (const item of items) {
+    if (item.display_name.toLowerCase() === nameLower) return item.value
+    const found = findInFilterTree(item.filter_items ?? [], nameLower)
+    if (found !== null) return found
+  }
+  return null
+}
+
+/**
+ * Returns true if the value contains a letter (a–å), meaning it should be
+ * treated as a human-readable name rather than a numeric ID.
+ */
+export function isNameInput(value: string): boolean {
+  return /[a-zA-ZæøåÆØÅ]/.test(value)
+}
+
+/**
+ * Resolves a human-readable location name to its DBA ID (e.g. "Bagenkop" →
+ * "1.200009.215935"). Returns null if not found.
+ */
+export async function resolveLocationName(name: string): Promise<string | null> {
+  const data = await apiFetch<FiltersResponse>(FILTER_SEARCH_PATH)
+  const filter = data.filters?.find((f) => f.name === "location")
+  if (!filter) return null
+  return findInFilterTree(filter.filter_items ?? [], name.toLowerCase())
+}
+
+/**
+ * Resolves a human-readable category name to its DBA ID (e.g. "Elektronik" →
+ * "0.293"). Returns null if not found.
+ */
+export async function resolveCategoryName(name: string): Promise<string | null> {
+  const data = await apiFetch<FiltersResponse>(FILTER_SEARCH_PATH)
+  const filter = data.filters?.find((f) => f.name === "category")
+  if (!filter) return null
+  return findInFilterTree(filter.filter_items ?? [], name.toLowerCase())
+}
+
 /**
  * Given a category code, returns the correct API param name and value.
  *

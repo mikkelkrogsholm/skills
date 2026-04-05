@@ -218,8 +218,8 @@ bun run src/cli.ts search [options]
 | `--filter` | | string | — | Client-side text filter: case-insensitive substring match applied to result titles after fetching |
 | `--price-from` | | number | — | Minimum price in DKK |
 | `--price-to` | | number | — | Maximum price in DKK |
-| `--category` | | string | — | Category code from `categories` command (e.g. `0.93`, `1.90.82`, `2.90.82.5`) |
-| `--location` | | string | — | Location code from `locations` command (e.g. `0.200010`) |
+| `--category` | | string | — | Category code (e.g. `0.93`, `1.90.82`, `2.90.82.5`) **or a plain name** (e.g. `Elektronik`, `Bilstereo`). Names are resolved automatically via the filter tree. |
+| `--location` | | string | — | Location code (e.g. `0.200010`, `1.200009.215935`) **or a plain name** (e.g. `Bagenkop`, `Bornholm`). Names are resolved automatically via the filter tree. |
 | `--condition` | | number | — | Item condition: `1`=brand new, `2`=like new, `3`=good used, `4`=visible wear, `5`=needs repair |
 | `--trade-type` | | string | — | `sale` (Til salg), `free` (Gives væk), or `wanted` (Ønsker at købe) |
 | `--seller` | | string | — | `private` or `dealer` |
@@ -229,9 +229,29 @@ bun run src/cli.ts search [options]
 | `--limit` | | number | `20` | Maximum number of results to return client-side (max 100) |
 | `--format` | | string | `json` | Output format: `json`, `table`, or `plain` |
 
+### Name resolution for `--category` and `--location`
+
+Both flags accept either a numeric ID or a plain name (any value containing a letter is treated as a name):
+
+- **Plain name** (e.g. `--location Bagenkop`, `--category Elektronik`) — the CLI fetches the filter tree and does a case-insensitive exact search through all levels. If found, the resolved ID is used transparently. If not found, the command exits with `NOT_FOUND`.
+- **Numeric ID** (e.g. `--location 0.200010`, `--category 1.90.82`) — used directly after format validation.
+
+#### ID format
+
+IDs encode depth and hierarchy as `{level}.{seg1}[.{seg2}...]`. The leading digit is the nesting level (0-indexed) and the number of segments after must be exactly `level + 1`:
+
+| Example | Level | Segments | Valid? |
+|---------|-------|----------|--------|
+| `0.200009` | 0 | 1 | ✓ |
+| `1.200009.215935` | 1 | 2 | ✓ |
+| `1.200009` | 1 | 1 | ✗ — level 1 needs 2 segments |
+| `0.200009.215935` | 0 | 2 | ✗ — level 0 needs 1 segment |
+
+A malformed ID exits with `INVALID_ID` before any network request is made.
+
 ### Category code routing
 
-When `--category` is set, the CLI inspects the leading digit of the code and routes it to the correct API parameter:
+When `--category` is set (whether supplied as a name or an ID), the CLI inspects the leading digit of the resolved code and routes it to the correct API parameter:
 - `0.X` → `category=0.X`
 - `1.X.Y` → `sub_category=1.X.Y`
 - `2.X.Y.Z` → `product_category=2.X.Y.Z`
@@ -300,6 +320,18 @@ When `--category` is set, the CLI inspects the leading digit of the code and rou
 ### Error cases
 
 Missing required context — returns no error; an empty `results` array with `total: 0` is valid.
+
+Malformed location or category ID (validated before any network request):
+
+```json
+{ "error": "Invalid location ID \"1.200009\": nesting level 1 requires exactly 2 segments after the prefix, but got 1. Run \"locations --tree\" to browse valid IDs.", "code": "INVALID_ID" }
+```
+
+Unknown location or category name:
+
+```json
+{ "error": "Location not found: \"Bagenkop\". Use \"locations --tree\" to browse valid location names and IDs.", "code": "NOT_FOUND" }
+```
 
 API unreachable or non-2xx:
 

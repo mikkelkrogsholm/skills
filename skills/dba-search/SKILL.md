@@ -73,8 +73,8 @@ Key flags:
 - `--query` / `-q` — keyword search (can be empty to browse all)
 - `--filter` — client-side substring filter applied to result titles
 - `--price-from` / `--price-to` — price range in DKK
-- `--category` — category code from `categories` (e.g. `0.93`, `1.90.82`, `2.90.82.5`)
-- `--location` — location code from `locations` (e.g. `0.200010`)
+- `--category` — category code (e.g. `0.93`, `1.90.82`, `2.90.82.5`) **or a plain name** (e.g. `Elektronik`, `Bilstereo`) — resolved automatically
+- `--location` — location code (e.g. `0.200010`, `1.200009.215935`) **or a plain name** (e.g. `Bagenkop`, `Bornholm`) — resolved automatically
 - `--condition` — `1`=brand new, `2`=like new, `3`=good used, `4`=visible wear, `5`=needs repair
 - `--trade-type` — `sale`, `free`, or `wanted`
 - `--seller` — `private` or `dealer`
@@ -96,12 +96,20 @@ Fetch the full listing detail for a single ad by its numeric ID (obtained from `
 
 ## How to use effectively
 
-**Natural workflow: `categories` → `search` → `detail`.**
+**Natural workflow: `search` → `detail`** (or `categories`/`locations` → `search` → `detail` if you need to browse the hierarchy first).
 
-1. Use `categories` (optionally with `--path`) to find a category code matching what the user wants.
-2. Use `locations` to find a location code if the user specifies a region or city.
-3. Use `search` with the category/location codes to get matching listings.
-4. Use `detail <id>` to inspect a specific listing in full, including description, extras, and shipping info.
+Both `--category` and `--location` accept plain names directly — you do not need to call `categories` or `locations` first if you already know the name:
+
+```bash
+# Plain names work directly in search
+bun run skills/dba-search/cli/src/cli.ts search --location Bagenkop --category Elektronik --limit 10
+```
+
+If the name is not found the CLI exits with `NOT_FOUND` and suggests running `categories --tree` or `locations --tree` to browse. Use those commands when you need to discover names or when you want a code to reuse across multiple searches.
+
+1. *(Optional)* Use `categories` / `locations` with `--tree` to discover the exact name or code for a category/region.
+2. Use `search` with names or codes to get matching listings.
+3. Use `detail <id>` to inspect a specific listing in full, including description, extras, and shipping info.
 
 **Omit `--query` to browse.** Passing no `--query` (or an empty string) returns all listings in the selected category/location. This is useful when the user wants to browse rather than search for a specific item.
 
@@ -121,6 +129,12 @@ Fetch the full listing detail for a single ad by its numeric ID (obtained from `
 bun run skills/dba-search/cli/src/cli.ts search --query "iPhone" --price-to 2000 --format table
 ```
 
+### Search by plain location and category name (no lookup step needed)
+
+```bash
+bun run skills/dba-search/cli/src/cli.ts search --location Bagenkop --category Elektronik --limit 10
+```
+
 ### Browse electronics category
 
 ```bash
@@ -128,17 +142,17 @@ bun run skills/dba-search/cli/src/cli.ts search --query "iPhone" --price-to 2000
 bun run skills/dba-search/cli/src/cli.ts categories --path "Elektronik" --format table
 
 # Then search within it
-bun run skills/dba-search/cli/src/cli.ts search --category 0.93 --format table
+bun run skills/dba-search/cli/src/cli.ts search --category "Elektronik" --format table
 ```
 
 ### Find free items in Copenhagen area
 
 ```bash
 # Get location code
-bun run skills/dba-search/cli/src/cli.ts locations --path "Sjælland/København" --format table
+bun run skills/dba-search/cli/src/cli.ts locations --path "Bornholm" --format table
 
 # Search for free items
-bun run skills/dba-search/cli/src/cli.ts search --trade-type free --location 0.200030 --format table
+bun run skills/dba-search/cli/src/cli.ts search --trade-type free --location "Bornholm" --format table
 ```
 
 ### Find like-new bicycles from private sellers
@@ -174,7 +188,7 @@ bun run skills/dba-search/cli/src/cli.ts detail 20211144 --format plain
 bun run skills/dba-search/cli/src/cli.ts locations --path "Bornholm"
 
 # Browse all listings in the area
-bun run skills/dba-search/cli/src/cli.ts search --location 0.200010 --limit 10 --format table
+bun run skills/dba-search/cli/src/cli.ts search --location "Bornholm" --limit 10 --format table
 ```
 
 ### Explore the full category tree

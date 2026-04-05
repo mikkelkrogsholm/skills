@@ -1,6 +1,9 @@
 import { defineCommand, option } from "@bunli/core"
 import { z } from "zod"
-import { apiFetch, outputResult, outputError, categoryParam, validateId } from "../helpers.js"
+import {
+  apiFetch, outputResult, outputError, categoryParam, validateId,
+  isNameInput, resolveLocationName, resolveCategoryName,
+} from "../helpers.js"
 
 const SEARCH_PATH = "/recommerce/forsale/search/api/search/SEARCH_ID_BAP_COMMON"
 
@@ -145,16 +148,40 @@ export const search = defineCommand({
     }
 
     if (flags.category) {
-      const err = validateId(flags.category, "category")
-      if (err) outputError(err, "INVALID_ID")
-      const { paramName, paramValue } = categoryParam(flags.category)
+      let categoryCode = flags.category
+      if (isNameInput(categoryCode)) {
+        const resolved = await resolveCategoryName(categoryCode)
+        if (!resolved) {
+          outputError(
+            `Category not found: "${categoryCode}". Use "categories --tree" to browse valid category names and IDs.`,
+            "NOT_FOUND",
+          )
+        }
+        categoryCode = resolved
+      } else {
+        const err = validateId(categoryCode, "category")
+        if (err) outputError(err, "INVALID_ID")
+      }
+      const { paramName, paramValue } = categoryParam(categoryCode)
       params[paramName] = paramValue
     }
 
     if (flags.location) {
-      const err = validateId(flags.location, "location")
-      if (err) outputError(err, "INVALID_ID")
-      params.location = flags.location
+      let locationCode = flags.location
+      if (isNameInput(locationCode)) {
+        const resolved = await resolveLocationName(locationCode)
+        if (!resolved) {
+          outputError(
+            `Location not found: "${locationCode}". Use "locations --tree" to browse valid location names and IDs.`,
+            "NOT_FOUND",
+          )
+        }
+        locationCode = resolved
+      } else {
+        const err = validateId(locationCode, "location")
+        if (err) outputError(err, "INVALID_ID")
+      }
+      params.location = locationCode
     }
 
     let data: ApiSearchResponse

@@ -142,6 +142,40 @@ describe("search command", () => {
   })
 })
 
+describe("name resolution for location and category", () => {
+  it("--location Bagenkop resolves and returns results", async () => {
+    const result = await runCLI(["search", "--location", "Bagenkop", "--limit", "3"])
+    expect(result.exitCode).toBe(0)
+    const data = parseJSON<SearchResponse>(result)
+    expect(Array.isArray(data.results)).toBe(true)
+  })
+
+  it("--location with unknown name exits 1 with NOT_FOUND mentioning the name", async () => {
+    const result = await runCLI(["search", "--location", "ZZZNonExistentPlaceXYZ"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("NOT_FOUND")
+    expect(err.error).toContain("ZZZNonExistentPlaceXYZ")
+    expect(err.error).toContain("locations --tree")
+  })
+
+  it("--category Elektronik resolves and returns results", async () => {
+    const result = await runCLI(["search", "--category", "Elektronik", "--limit", "3"])
+    expect(result.exitCode).toBe(0)
+    const data = parseJSON<SearchResponse>(result)
+    expect(Array.isArray(data.results)).toBe(true)
+  })
+
+  it("--category with unknown name exits 1 with NOT_FOUND mentioning the name", async () => {
+    const result = await runCLI(["search", "--category", "ZZZNonExistentCategoryXYZ"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("NOT_FOUND")
+    expect(err.error).toContain("ZZZNonExistentCategoryXYZ")
+    expect(err.error).toContain("categories --tree")
+  })
+})
+
 describe("ID validation (no network calls)", () => {
   it("--category 1.90 exits 1: level 1 needs 2 segments but got 1", async () => {
     const result = await runCLI(["search", "--category", "1.90"])
@@ -167,11 +201,12 @@ describe("ID validation (no network calls)", () => {
     expect(err.error).toContain('"2.90.82"')
   })
 
-  it("--category 0.abc exits 1: non-numeric segment", async () => {
+  it("--category 0.abc exits 1: contains letters so treated as name lookup → NOT_FOUND", async () => {
+    // "0.abc" contains letters → treated as a name (not an ID), lookup fails
     const result = await runCLI(["search", "--category", "0.abc"])
     expect(result.exitCode).toBe(1)
     const err = JSON.parse(result.stderr)
-    expect(err.code).toBe("INVALID_ID")
+    expect(err.code).toBe("NOT_FOUND")
   })
 
   it("--location 1.200009 exits 1: level 1 needs 2 segments but got 1", async () => {
