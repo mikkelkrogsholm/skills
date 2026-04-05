@@ -141,3 +141,65 @@ describe("search command", () => {
     expect(result.stdout.length).toBeGreaterThan(0)
   })
 })
+
+describe("ID validation (no network calls)", () => {
+  it("--category 1.90 exits 1: level 1 needs 2 segments but got 1", async () => {
+    const result = await runCLI(["search", "--category", "1.90"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("INVALID_ID")
+    expect(err.error).toContain('"1.90"')
+  })
+
+  it("--category 0.90.82 exits 1: level 0 needs 1 segment but got 2", async () => {
+    const result = await runCLI(["search", "--category", "0.90.82"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("INVALID_ID")
+    expect(err.error).toContain('"0.90.82"')
+  })
+
+  it("--category 2.90.82 exits 1: level 2 needs 3 segments but got 2", async () => {
+    const result = await runCLI(["search", "--category", "2.90.82"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("INVALID_ID")
+    expect(err.error).toContain('"2.90.82"')
+  })
+
+  it("--category 0.abc exits 1: non-numeric segment", async () => {
+    const result = await runCLI(["search", "--category", "0.abc"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("INVALID_ID")
+  })
+
+  it("--location 1.200009 exits 1: level 1 needs 2 segments but got 1", async () => {
+    const result = await runCLI(["search", "--location", "1.200009"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("INVALID_ID")
+    expect(err.error).toContain('"1.200009"')
+    expect(err.error).toContain("locations --tree")
+  })
+
+  it("--location 0.200009.215466 exits 1: level 0 needs 1 segment but got 2", async () => {
+    const result = await runCLI(["search", "--location", "0.200009.215466"])
+    expect(result.exitCode).toBe(1)
+    const err = JSON.parse(result.stderr)
+    expect(err.code).toBe("INVALID_ID")
+    expect(err.error).toContain('"0.200009.215466"')
+  })
+
+  it("error message tells agent to run locations --tree for location IDs", async () => {
+    const result = await runCLI(["search", "--location", "1.200009"])
+    const err = JSON.parse(result.stderr)
+    expect(err.error).toContain("locations --tree")
+  })
+
+  it("error message tells agent to run categories --tree for category IDs", async () => {
+    const result = await runCLI(["search", "--category", "1.90"])
+    const err = JSON.parse(result.stderr)
+    expect(err.error).toContain("categories --tree")
+  })
+})

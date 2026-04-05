@@ -1,6 +1,6 @@
 import { defineCommand, option } from "@bunli/core"
 import { z } from "zod"
-import { apiFetch, outputResult, outputError, categoryParam } from "../helpers.js"
+import { apiFetch, outputResult, outputError, categoryParam, validateId } from "../helpers.js"
 
 const SEARCH_PATH = "/recommerce/forsale/search/api/search/SEARCH_ID_BAP_COMMON"
 
@@ -145,11 +145,15 @@ export const search = defineCommand({
     }
 
     if (flags.category) {
+      const err = validateId(flags.category, "category")
+      if (err) outputError(err, "INVALID_ID")
       const { paramName, paramValue } = categoryParam(flags.category)
       params[paramName] = paramValue
     }
 
     if (flags.location) {
+      const err = validateId(flags.location, "location")
+      if (err) outputError(err, "INVALID_ID")
       params.location = flags.location
     }
 

@@ -116,6 +116,54 @@ export function outputError(error: string, code: string): never {
 }
 
 /**
+ * Validates a location or category ID.
+ *
+ * ID format: `{level}.{seg1}[.{seg2}...]`
+ * The first segment is the nesting level (0-indexed). The number of segments
+ * after the level must be exactly `level + 1`.
+ *
+ * Examples:
+ *   "0.200009"          → valid   (level 0, 1 segment)
+ *   "1.200009.215466"   → valid   (level 1, 2 segments)
+ *   "1.200009"          → INVALID (level 1 needs 2 segments, got 1)
+ *   "0.200009.215466"   → INVALID (level 0 needs 1 segment, got 2)
+ *
+ * Returns a human-readable error string on failure, or null if valid.
+ */
+export function validateId(id: string, idType: "category" | "location"): string | null {
+  const browseCmd = idType === "location" ? "locations --tree" : "categories --tree"
+  const parts = id.split(".")
+  const level = parseInt(parts[0], 10)
+
+  if (isNaN(level) || level < 0 || String(level) !== parts[0]) {
+    return `Invalid ${idType} ID "${id}": first segment must be a non-negative integer (the nesting level). Run "${browseCmd}" to browse valid IDs.`
+  }
+
+  const segments = parts.slice(1)
+
+  if (segments.length === 0) {
+    return `Invalid ${idType} ID "${id}": missing ID segments after the level prefix. Run "${browseCmd}" to browse valid IDs.`
+  }
+
+  for (const seg of segments) {
+    if (!/^\d+$/.test(seg)) {
+      return `Invalid ${idType} ID "${id}": all segments must be numeric. Run "${browseCmd}" to browse valid IDs.`
+    }
+  }
+
+  const expected = level + 1
+  if (segments.length !== expected) {
+    return (
+      `Invalid ${idType} ID "${id}": nesting level ${level} requires exactly ${expected} ` +
+      `segment${expected !== 1 ? "s" : ""} after the prefix, but got ${segments.length}. ` +
+      `Run "${browseCmd}" to browse valid IDs.`
+    )
+  }
+
+  return null
+}
+
+/**
  * Given a category code, returns the correct API param name and value.
  *
  * Code format:
