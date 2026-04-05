@@ -115,7 +115,7 @@ export const search = defineCommand({
     limit: option(z.coerce.number().default(20), {
       description: "Maximum number of results to return client-side (max 100)",
     }),
-    format: option(z.enum(["json", "table", "plain"]).default("json"), {
+    format: option(z.enum(["json", "table", "plain"]).default("plain"), {
       description: "Output format: json, table, or plain",
     }),
   },

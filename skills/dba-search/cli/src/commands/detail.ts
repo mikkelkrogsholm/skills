@@ -83,7 +83,7 @@ export const detail = defineCommand({
   name: "detail",
   description: "Get full details for a single DBA ad",
   options: {
-    format: option(z.enum(["json", "table", "plain"]).default("json"), {
+    format: option(z.enum(["json", "table", "plain"]).default("plain"), {
       description: "Output format: json, table, or plain",
     }),
   },

@@ -55,7 +55,7 @@ export const locations = defineCommand({
       description: "Show full nested tree",
       argumentKind: "flag",
     }),
-    format: option(z.enum(["json", "table", "plain"]).default("json"), {
+    format: option(z.enum(["json", "table", "plain"]).default("plain"), {
       description: "Output format",
     }),
   },
