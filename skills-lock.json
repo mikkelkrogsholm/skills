@@ -50,6 +50,10 @@
     "rejseplanen": {
       "source": "skills/rejseplanen/SKILL.md",
       "sourceType": "local"
+    },
+    "osm-accommodation": {
+      "source": "skills/osm-accommodation/SKILL.md",
+      "sourceType": "local"
     }
   }
 }

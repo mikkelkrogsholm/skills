@@ -1,0 +1,24 @@
+{
+  "name": "osm-accommodation-cli",
+  "version": "1.0.0",
+  "description": "Find accommodation worldwide using OpenStreetMap data — no API key required",
+  "type": "module",
+  "main": "src/cli.ts",
+  "bin": {
+    "osm-accommodation": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "test": "bun test --timeout 45000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bunli/core": "latest",
+    "@bunli/utils": "latest",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "latest"
+  }
+}

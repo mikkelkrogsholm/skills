@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **rejseplanen** — Danish public transport journey planning via the Rejseplanen API (6 commands: location, trip, departures, arrivals, nearby, disruptions)
+- **Open Street Map accommodation** – Search for accommodation internationally. Unfortunately no possibility of booking, or seeing prices and availability.
 
 ## [1.0.0] - 2026-03-13
 
