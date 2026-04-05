@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Added install-all script for easy install of all skills.
 - **rejseplanen** — Danish public transport journey planning via the Rejseplanen API (6 commands: location, trip, departures, arrivals, nearby, disruptions)
 
 ## [1.0.0] - 2026-03-13

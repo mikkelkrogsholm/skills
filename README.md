@@ -8,6 +8,18 @@ Agent skills that help people navigate everyday life in Denmark — finding a ho
 
 Framework agnostic. Contributions welcome.
 
+## Install All Skills
+
+Install every skill in one command — no cloning required:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mikkelkrogsholm/skills/main/scripts/install-all.sh | bash
+```
+
+This fetches the current skill list from [`skills-lock.json`](skills-lock.json) and runs `npx skills add` with the local skills. Requires `bunx`, `npx`, or `python3`.
+
+To install a single skill, use `npx skills add` or `bunx skills add` directly — see the commands below.
+
 ## Available Skills
 
 ### Danish Job Search
