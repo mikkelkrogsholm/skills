@@ -1,11 +1,6 @@
 import { defineCommand, option } from "@bunli/core"
 import { z } from "zod"
-import { apiFetch, parseJobCards, parseHitCount, writeError } from "../helpers.js"
-
-interface SearchAPIResponse {
-  result_list_box_html: string
-  hitcount_html: string
-}
+import { BASE_URL, htmlFetch, parseSearchPage, writeError, type JobCard } from "../helpers.js"
 
 export const search = defineCommand({
   name: "search",
@@ -39,20 +34,21 @@ export const search = defineCommand({
 
     if (signal.aborted) return
 
-    const params: Record<string, string> = {
+    const params = new URLSearchParams({
       q: flags.query,
       page: String(flags.page),
       jobage: String(flags.jobage),
       sort: flags.sort,
-    }
+    })
 
     try {
-      const data = await apiFetch<SearchAPIResponse>("/jobsoegning.json", params)
+      const html = await htmlFetch(`${BASE_URL}/jobsoegning?${params.toString()}`)
 
       if (signal.aborted) return
 
-      const total = parseHitCount(data.hitcount_html ?? "")
-      let results = parseJobCards(data.result_list_box_html ?? "")
+      const parsed = parseSearchPage(html)
+      const total = parsed.total
+      let results = parsed.results
 
       if (flags.limit !== undefined) {
         results = results.slice(0, flags.limit)
@@ -81,7 +77,7 @@ export const search = defineCommand({
   },
 })
 
-function outputTable(results: ReturnType<typeof parseJobCards>): void {
+function outputTable(results: JobCard[]): void {
   console.log("id          title                                    company              location")
   for (const r of results) {
     const id = r.id.padEnd(11)
@@ -92,13 +88,14 @@ function outputTable(results: ReturnType<typeof parseJobCards>): void {
   }
 }
 
-function outputPlain(results: ReturnType<typeof parseJobCards>): void {
+function outputPlain(results: JobCard[]): void {
   for (const r of results) {
     console.log(`id: ${r.id}`)
     console.log(`title: ${r.title}`)
     console.log(`company: ${r.company ?? "-"}`)
     console.log(`location: ${r.location ?? "-"}`)
     console.log(`date: ${r.date ?? "-"}`)
+    console.log(`deadline: ${r.deadline ?? "-"}`)
     console.log(`url: ${r.url}`)
     if (r.description) console.log(`description: ${r.description}`)
     console.log("")
