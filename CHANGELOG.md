@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **rejseplanen** — Danish public transport journey planning via the Rejseplanen API (6 commands: location, trip, departures, arrivals, nearby, disruptions)
 
+### Fixed
+
+- **jobindex-search** — `search` command broke after Jobindex retired its `/jobsoegning.json` endpoint (now returns `204 No Content`) and moved results client-side. The command now fetches the `/jobsoegning` HTML page and parses the embedded `var Stash = {...}` payload (`searchResponse.results` + `hitcount`). Results gain a `deadline` field.
+
 ## [1.0.0] - 2026-03-13
 
 ### Added
