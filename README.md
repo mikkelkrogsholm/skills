@@ -58,6 +58,22 @@ npx skills add https://github.com/mikkelkrogsholm/skills --skill boligsiden
 npx skills add https://github.com/mikkelkrogsholm/skills --skill salling-food-waste
 ```
 
+### Danish Public Transport
+
+**rejseplanen** ![tests](assets/badges/rejseplanen.svg) — Plan journeys, check departures/arrivals, and look up stops across all Danish public transport (trains, buses, metro, light rail) via the [Rejseplanen API](https://www.rejseplanen.dk)
+
+```bash
+npx skills add https://github.com/mikkelkrogsholm/skills --skill rejseplanen
+```
+
+### Travel & Accommodation
+
+**osm-accommodation** ![tests](assets/badges/osm-accommodation.svg) — Find hotels, hostels, guest houses, motels, and B&Bs across Europe and beyond using [OpenStreetMap](https://www.openstreetmap.org) data — no API key required
+
+```bash
+npx skills add https://github.com/mikkelkrogsholm/skills --skill osm-accommodation
+```
+
 ### Biomedical Research
 
 **pubmed-database** ![tests](assets/badges/pubmed-database.svg) — Search 35M+ citations from PubMed/MEDLINE via the NCBI E-utilities API

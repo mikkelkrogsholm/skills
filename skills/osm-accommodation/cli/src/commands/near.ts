@@ -1,0 +1,149 @@
+import { defineCommand, option } from "@bunli/core"
+import { z } from "zod"
+import { overpassFetch, toAccommodation, writeError, type Accommodation } from "../helpers.js"
+
+export const near = defineCommand({
+  name: "near",
+  description: "Find accommodation near a coordinate pair (skips geocoding)",
+  options: {
+    radius: option(z.coerce.number().default(5), {
+      description: "Search radius in km (default: 5)",
+    }),
+    type: option(z.enum(["hotel", "hostel", "guest_house", "motel", "all"]).default("all"), {
+      description: "Filter by type: hotel, hostel, guest_house, motel, all (default: all)",
+    }),
+    stars: option(z.coerce.number().optional(), {
+      description: "Minimum star rating (excludes properties with no star data)",
+    }),
+    amenity: option(z.string().optional(), {
+      description: "Comma-separated amenities to require: wifi, breakfast, parking, pool, wheelchair",
+    }),
+    limit: option(z.coerce.number().default(20), {
+      description: "Max results to return, client-side cap (default: 20)",
+    }),
+    format: option(z.enum(["json", "table", "plain"]).default("plain"), {
+      description: "Output format: json, table, plain",
+    }),
+  },
+  handler: async ({ positional, flags, signal }) => {
+    if (signal.aborted) return
+
+    const latStr = positional[0]
+    const lonStr = positional[1]
+
+    if (!latStr || !lonStr) {
+      writeError("lat and lon positional arguments are required (e.g. near 48.8566 2.3522)", "MISSING_REQUIRED")
+      process.exit(1)
+    }
+
+    const lat = parseFloat(latStr)
+    const lon = parseFloat(lonStr)
+
+    if (isNaN(lat) || isNaN(lon)) {
+      writeError("lat and lon must be valid decimal numbers (e.g. 48.8566 2.3522)", "INVALID_ARGS")
+      process.exit(1)
+    }
+
+    try {
+      if (signal.aborted) return
+
+      // Approximate bounding box: 1 degree latitude ≈ 111 km
+      const delta = flags.radius / 111
+      const south = lat - delta
+      const north = lat + delta
+      const west = lon - delta
+      const east = lon + delta
+
+      const typeRegex = flags.type === "all" ? "hotel|hostel|guest_house|motel" : flags.type
+
+      const query = `[out:json][timeout:25];
+nwr(${south},${west},${north},${east})["tourism"~"^(${typeRegex})$"];
+out center tags;`
+
+      const data = await overpassFetch(query)
+
+      if (signal.aborted) return
+
+      let results: Accommodation[] = data.elements.map(toAccommodation)
+
+      // Client-side filters — Overpass does not support these natively
+      if (flags.stars !== undefined) {
+        const minStars = flags.stars
+        results = results.filter((r) => r.stars !== null && r.stars >= minStars)
+      }
+
+      if (flags.amenity) {
+        const requested = flags.amenity.split(",").map((a) => a.trim())
+        results = results.filter((r) => {
+          for (const amenity of requested) {
+            if (amenity === "wifi" && r.amenities.wifi !== true) return false
+            if (amenity === "breakfast" && r.amenities.breakfast !== true) return false
+            if (amenity === "parking" && r.amenities.parking !== true) return false
+            if (amenity === "pool" && r.amenities.pool !== true) return false
+            if (amenity === "wheelchair" && r.amenities.wheelchair !== true) return false
+          }
+          return true
+        })
+      }
+
+      results = results.slice(0, flags.limit)
+
+      if (results.length === 0) {
+        writeError("No accommodation found matching your filters", "NO_RESULTS")
+        process.exit(1)
+      }
+
+      const output = {
+        type: "osm_accommodation_near",
+        lat,
+        lon,
+        radius: flags.radius,
+        results,
+        count: results.length,
+      }
+
+      if (flags.format === "json") {
+        console.log(JSON.stringify(output, null, 2))
+      } else if (flags.format === "table") {
+        outputTable(results)
+      } else {
+        outputPlain(results)
+      }
+    } catch (err) {
+      writeError(err instanceof Error ? err.message : String(err), "API_UNAVAILABLE")
+      process.exit(1)
+    }
+  },
+})
+
+function outputTable(results: Accommodation[]): void {
+  console.log("Name                            Type          Stars  City")
+  console.log("-".repeat(72))
+  for (const r of results) {
+    const name = r.name.substring(0, 30).padEnd(32)
+    const type = r.type.padEnd(13)
+    const stars = r.stars !== null ? String(r.stars) : "-"
+    const city = r.address.city ?? "-"
+    console.log(`${name} ${type} ${stars.padEnd(6)} ${city}`)
+  }
+}
+
+function outputPlain(results: Accommodation[]): void {
+  for (const r of results) {
+    const starStr = r.stars !== null ? ` ${r.stars}★` : ""
+    console.log(`${r.name} (${r.type}${starStr})`)
+    const addrParts = [r.address.street, r.address.postcode, r.address.city, r.address.country].filter(Boolean)
+    if (addrParts.length > 0) console.log(`  Address: ${addrParts.join(", ")}`)
+    if (r.contact.phone) console.log(`  Phone: ${r.contact.phone}`)
+    if (r.contact.email) console.log(`  Email: ${r.contact.email}`)
+    if (r.contact.website) console.log(`  Website: ${r.contact.website}`)
+    const amenList: string[] = []
+    if (r.amenities.wifi === true) amenList.push("wifi")
+    if (r.amenities.breakfast === true) amenList.push("breakfast")
+    if (r.amenities.parking === true) amenList.push("parking")
+    if (r.amenities.pool === true) amenList.push("pool")
+    if (r.amenities.wheelchair === true) amenList.push("wheelchair")
+    if (amenList.length > 0) console.log(`  Amenities: ${amenList.join(", ")}`)
+    console.log("")
+  }
+}
