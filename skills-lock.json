@@ -50,6 +50,10 @@
     "rejseplanen": {
       "source": "skills/rejseplanen/SKILL.md",
       "sourceType": "local"
+    },
+    "dba-search": {
+      "source": "skills/dba-search/SKILL.md",
+      "sourceType": "local"
     }
   }
 }

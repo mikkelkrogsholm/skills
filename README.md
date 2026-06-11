@@ -72,6 +72,15 @@ npx skills add https://github.com/mikkelkrogsholm/skills --skill pubmed-database
 npx skills add https://github.com/mikkelkrogsholm/skills --skill medrxiv-search
 ```
 
+### Other
+
+**DBA – Den blå avis** ![tests](assets/badges/dba-search.svg) —  Denmark's largest second-hand marketplace, [DBA.dk (Den Blå Avis)](https://www.dba.dk). Browse categories and locations, search classified ads, and fetch full ad details
+
+```bash
+npx skills add https://github.com/mikkelkrogsholm/skills --skill dba-search
+```
+
+
 ## Want a New Skill?
 
 Check the [open issues](https://github.com/mikkelkrogsholm/skills/issues?q=is%3Aissue+label%3A%22new+skill%22) to see what's planned, in progress, or up for grabs. Feel free to open a new issue to suggest a data source!
